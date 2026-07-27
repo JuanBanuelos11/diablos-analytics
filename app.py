@@ -49,7 +49,7 @@ st.markdown("<style>#MainMenu,header,footer{visibility:hidden}.stApp{background:
 
 team = "DRM"  # Diablos Rojos only
 c1, c2, c3 = st.columns([1.25, 1.2, 1.1])
-size = c1.radio("Lineup size", [2, 3, 4, 5], index=3, horizontal=True)
+size = c1.radio("Lineup size", [1, 2, 3, 4, 5], index=4, horizontal=True)  # 1 = individual player +/-
 mode = c2.radio("Stats", ["Traditional", "Advanced"], index=0, horizontal=True)
 view = c3.radio("View", ["Totals", "Per Game"], index=0, horizontal=True)
 per_game = (view == "Per Game")
