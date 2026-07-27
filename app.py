@@ -120,10 +120,12 @@ def circle(label):
     p = pl_team.get(label, {"num": label.split(" ", 1)[0].lstrip("#"),
                             "sn": label.split(" ", 1)[-1].upper(), "img": None})
     cls = ("im"+str(p["num"])) if p.get("img") else ""
-    return f'<span class="ph {cls}"></span><span class="pn">{str(p["num"])}</span>'
+    name = label.split(" ", 1)[1] if " " in label else label   # full name for tooltip
+    return (f'<span class="pc" title="{html.escape(name)}">'
+            f'<span class="ph {cls}"></span><span class="pn">{str(p["num"])}</span></span>')
 
 def lucell(lineup):
-    return "".join(f'<span class="pc">{circle(l)}</span>' for l in lineup.split(" / "))
+    return "".join(circle(l) for l in lineup.split(" / "))
 
 TRAD = [("GP","GP","i"),("MIN","MIN","1"),("PM","+/-","pm"),("ADJ36","ADJ36","1"),("PTS","PTS","i"),
         ("FGM","FGM","i"),("FGA","FGA","i"),("FGp","FG%","p"),("TPM","3PM","i"),("TPA","3PA","i"),("TPp","3P%","p"),
@@ -161,16 +163,16 @@ thead th{position:sticky;top:0;z-index:3;background:#12151b;color:#8a929c;font-s
   padding:10px 8px;text-align:center;cursor:pointer;white-space:nowrap;border-bottom:1px solid #232830;user-select:none}
 thead th:hover{color:#e9ecef}
 thead th.act{color:ACC}
-th.lu,td.lu{position:sticky;left:0;z-index:2;background:#0f1216;text-align:left;min-width:270px;border-right:1px solid #232830}
+th.lu,td.lu{position:sticky;left:0;z-index:2;background:#0f1216;text-align:left;min-width:340px;border-right:1px solid #232830}
 thead th.lu{z-index:4}
 tbody td{padding:8px;text-align:center;color:#dfe3e8;font-weight:600;white-space:nowrap;border-bottom:1px solid #161a20}
 tbody tr:hover td{background:#12161c}
 tbody tr:hover td.lu{background:#141821}
 .rk{color:#5a6270;font-weight:800;padding-right:8px}
 .luwrap{display:flex;align-items:center;gap:5px}
-.pc{position:relative;display:inline-block;width:40px;text-align:center}
-.ph{display:block;width:38px;height:38px;border-radius:50%;background-color:#15171b;box-shadow:0 0 0 2px ACC;background-size:cover;background-position:center top;margin:0 auto}
-.pn{position:absolute;bottom:-2px;right:2px;background:#0c0c0e;box-shadow:0 0 0 1.5px ACC;color:#fff;font-size:8px;font-weight:800;border-radius:50%;width:15px;height:15px;line-height:15px;text-align:center}
+.pc{position:relative;display:inline-block;width:52px;text-align:center;cursor:default}
+.ph{display:block;width:48px;height:48px;border-radius:50%;background-color:#15171b;box-shadow:0 0 0 2.5px ACC;background-size:cover;background-position:center top;margin:0 auto}
+.pn{position:absolute;bottom:-2px;right:4px;background:#0c0c0e;box-shadow:0 0 0 1.5px ACC;color:#fff;font-size:9px;font-weight:800;border-radius:50%;width:18px;height:18px;line-height:18px;text-align:center}
 .pos{color:#2fe08a}.neg{color:#ff5468}
 .ar{font-size:8px}
 </style>
@@ -205,7 +207,7 @@ render();
 TABLE = ('<div class="hd">LNBP · LINEUP EXPLORER · ' + mode.upper() + '</div>'
          '<div class="tn">' + TNAME.get(team, team) + '</div>'
          '<div class="scrollx"><table><thead><tr id="hd"></tr></thead><tbody id="tb"></tbody></table></div>')
-maxh = min(120 + len(data)*54, 620)
+maxh = min(120 + len(data)*64, 640)
 block = (STYLE.replace("MAXHVAL", str(maxh)+"px") + "<style>" + im_css + "</style>" + TABLE
          + SCRIPT.replace("__COLS__", coljson).replace("__DATA__", datajson).replace("__DEF__", defsort))
 components.html(block, height=maxh + 90, scrolling=False)
