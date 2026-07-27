@@ -89,6 +89,7 @@ def derive(r):
         OREB=int(o["orb"]), DREB=int(o["drb"]), REB=int(reb),
         AST=int(o["ast"]), TOV=int(o["tov"]), STL=int(o["stl"]), BLK=int(o["blk"]),
         PM=int(r["plus_minus"]) if not pd.isna(r["plus_minus"]) else 0,
+        ADJ36=round((r["plus_minus"]*36/mn), 1) if (mn>0 and not pd.isna(r["plus_minus"])) else None,
         POSS=round((tmposs+opposs)/2),
         ORTG=round(sd(o["pts"]*100, tmposs), 1) if sd(o["pts"], tmposs) is not None else None,
         DRTG=round(sd(op["pts"]*100, opposs), 1) if sd(op["pts"], opposs) is not None else None,
@@ -114,11 +115,11 @@ def circle(label):
 def lucell(lineup):
     return "".join(f'<span class="pc">{circle(l)}</span>' for l in lineup.split(" / "))
 
-TRAD = [("GP","GP","i"),("MIN","MIN","1"),("PM","+/-","pm"),("PTS","PTS","i"),
+TRAD = [("GP","GP","i"),("MIN","MIN","1"),("PM","+/-","pm"),("ADJ36","ADJ36","1"),("PTS","PTS","i"),
         ("FGM","FGM","i"),("FGA","FGA","i"),("FGp","FG%","p"),("TPM","3PM","i"),("TPA","3PA","i"),("TPp","3P%","p"),
         ("FTM","FTM","i"),("FTA","FTA","i"),("FTp","FT%","p"),("OREB","OREB","i"),("DREB","DREB","i"),("REB","REB","i"),
         ("AST","AST","i"),("TOV","TOV","i"),("STL","STL","i"),("BLK","BLK","i")]
-ADV = [("GP","GP","i"),("MIN","MIN","1"),("POSS","POSS","i"),("ORTG","ORTG","1"),("DRTG","DRTG","1"),("NETRTG","NET","pm"),
+ADV = [("GP","GP","i"),("MIN","MIN","1"),("POSS","POSS","i"),("ORTG","ORTG","1"),("DRTG","DRTG","1"),("NETRTG","NET","pm"),("ADJ36","ADJ36","1"),
        ("eFG","eFG%","p"),("TS","TS%","p"),("ASTp","AST%","p"),("ASTTO","AST/TO","2"),("ASTr","AST RATIO","1"),
        ("TOr","TO RATIO","1"),("OREBp","OREB%","p"),("DREBp","DREB%","p"),("REBp","REB%","p"),("PACE","PACE","1")]
 cols = TRAD if mode == "Traditional" else ADV
