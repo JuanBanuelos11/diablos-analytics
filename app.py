@@ -16,10 +16,16 @@ def load():
             b=os.path.basename(f).lower()
             if b not in seen: seen.add(b); files.append(f)
     df = pd.concat([pd.read_csv(f) for f in files], ignore_index=True) if files else pd.DataFrame()
-    try:
-        players = json.load(open("players.json", encoding="utf-8"))
-    except Exception:
-        players = {}
+    players = {}
+    import os
+    js = [f for f in glob.glob("**/*", recursive=True) if f.lower().endswith(".json")]
+    for f in js:
+        try:
+            d = json.load(open(f, encoding="utf-8"))
+            if isinstance(d, dict) and any(k in d for k in ("DRM", "AGS")):
+                players = d; break
+        except Exception:
+            pass
     return df, players
 
 df, PLAYERS = load()
