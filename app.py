@@ -6,7 +6,7 @@ st.set_page_config(page_title="Diablos Analytics — Lineups", layout="wide", pa
 
 @st.cache_data
 def load_data():
-    files = glob.glob("**/*.csv", recursive=True) + glob.glob("*.csv")
+    files = [f for f in glob.glob("**/*", recursive=True) if f.lower().endswith(".csv")]
     if not files:
         return pd.DataFrame()
     df = pd.concat([pd.read_csv(f) for f in files], ignore_index=True)
