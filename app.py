@@ -32,6 +32,8 @@ def load():
     return df, players
 
 df, PLAYERS = load()
+if not df.empty:
+    df = df[df["team_code"] == "DRM"].reset_index(drop=True)
 if df.empty:
     st.warning("No data yet. Upload a game CSV to the repo."); st.stop()
 if "seconds" not in df.columns:
@@ -45,12 +47,11 @@ df["bsec"] = np.where(has_box_col, df["seconds"], 0)   # seconds from games that
 st.markdown("<style>#MainMenu,header,footer{visibility:hidden}.stApp{background:#08090b}"
             ".block-container{padding-top:1rem;max-width:1400px}</style>", unsafe_allow_html=True)
 
-c1, c2, c3, c4 = st.columns([1.05, 1.35, 1.25, 1.15])
-team = c1.selectbox("Team", sorted(df["team_code"].unique(), key=lambda t: 0 if t == "DRM" else 1),
-                    format_func=lambda t: TNAME.get(t, t))
-size = c2.radio("Lineup size", [2, 3, 4, 5], index=3, horizontal=True)
-mode = c3.radio("Stats", ["Traditional", "Advanced"], index=0, horizontal=True)
-view = c4.radio("View", ["Totals", "Per Game"], index=0, horizontal=True)
+team = "DRM"  # Diablos Rojos only
+c1, c2, c3 = st.columns([1.25, 1.2, 1.1])
+size = c1.radio("Lineup size", [2, 3, 4, 5], index=3, horizontal=True)
+mode = c2.radio("Stats", ["Traditional", "Advanced"], index=0, horizontal=True)
+view = c3.radio("View", ["Totals", "Per Game"], index=0, horizontal=True)
 per_game = (view == "Per Game")
 pl_team = PLAYERS.get(team, {})
 acc = COLORS.get(team, "#e01023")
