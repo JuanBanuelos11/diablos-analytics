@@ -40,16 +40,18 @@ df["seconds"] = df["seconds"].fillna(df["minutes"] * 60).round().astype(int)
 for c in BOX + ["opp_"+c for c in BOX]:
     if c not in df.columns: df[c] = np.nan
 has_box_col = df["pts"].notna()
-df["bsec"] = np.where(has_box_col, df["seconds"], 0)   # segundos con box completo
+df["bsec"] = np.where(has_box_col, df["seconds"], 0)   # seconds from games that have full box score
 
 st.markdown("<style>#MainMenu,header,footer{visibility:hidden}.stApp{background:#08090b}"
             ".block-container{padding-top:1rem;max-width:1400px}</style>", unsafe_allow_html=True)
 
-c1, c2, c3 = st.columns([1.1, 1.5, 1.4])
+c1, c2, c3, c4 = st.columns([1.05, 1.35, 1.25, 1.15])
 team = c1.selectbox("Team", sorted(df["team_code"].unique(), key=lambda t: 0 if t == "DRM" else 1),
                     format_func=lambda t: TNAME.get(t, t))
 size = c2.radio("Lineup size", [2, 3, 4, 5], index=3, horizontal=True)
 mode = c3.radio("Stats", ["Traditional", "Advanced"], index=0, horizontal=True)
+view = c4.radio("View", ["Totals", "Per Game"], index=0, horizontal=True)
+per_game = (view == "Per Game")
 pl_team = PLAYERS.get(team, {})
 acc = COLORS.get(team, "#e01023")
 
@@ -105,6 +107,13 @@ def derive(r):
     return d
 
 recs = [derive(r) for _, r in A.iterrows()]
+COUNT = {"PTS","FGM","FGA","TPM","TPA","FTM","FTA","OREB","DREB","REB","AST","TOV","STL","BLK","PM","POSS","MIN"}
+if per_game:
+    for d in recs:
+        gp = d["GP"] or 1
+        for k in COUNT:
+            if d.get(k) is not None:
+                d[k] = round(d[k] / gp, 1)
 
 def circle(label):
     p = pl_team.get(label, {"num": label.split(" ", 1)[0].lstrip("#"),
@@ -122,7 +131,13 @@ TRAD = [("GP","GP","i"),("MIN","MIN","1"),("PM","+/-","pm"),("ADJ36","ADJ36","1"
 ADV = [("GP","GP","i"),("MIN","MIN","1"),("POSS","POSS","i"),("ORTG","ORTG","1"),("DRTG","DRTG","1"),("NETRTG","NET","pm"),("ADJ36","ADJ36","1"),
        ("eFG","eFG%","p"),("TS","TS%","p"),("ASTp","AST%","p"),("ASTTO","AST/TO","2"),("ASTr","AST RATIO","1"),
        ("TOr","TO RATIO","1"),("OREBp","OREB%","p"),("DREBp","DREB%","p"),("REBp","REB%","p"),("PACE","PACE","1")]
-cols = TRAD if mode == "Traditional" else ADV
+base_cols = TRAD if mode == "Traditional" else ADV
+CNT = {"PTS","FGM","FGA","TPM","TPA","FTM","FTA","OREB","DREB","REB","AST","TOV","STL","BLK","POSS"}
+def _fmt(k, f):
+    if per_game and k in CNT: return "1"
+    if per_game and k == "PM": return "s1"
+    return f
+cols = [(k, l, _fmt(k, f)) for k, l, f in base_cols]
 
 data = []
 for d in recs:
@@ -166,6 +181,7 @@ const COLS=__COLS__, DATA=__DATA__;
 let key="__DEF__", dir=-1;
 function fmt(v,f){ if(v===null||v===undefined) return "-";
   if(f==="pm"){const s=v>0?"+"+v:""+v; return '<span class="'+(v>0?"pos":(v<0?"neg":""))+'">'+s+'</span>';}
+  if(f==="s1"){const n=(Math.round(v*10)/10).toFixed(1); const s=v>0?"+"+n:n; return '<span class="'+(v>0?"pos":(v<0?"neg":""))+'">'+s+'</span>';}
   if(f==="i") return v;
   if(f==="1") return (Math.round(v*10)/10).toFixed(1);
   if(f==="2") return (Math.round(v*100)/100).toFixed(2);
