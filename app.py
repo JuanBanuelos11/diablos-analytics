@@ -152,7 +152,7 @@ tbody tr:hover td.lu{background:#141821}
 .rk{color:#5a6270;font-weight:800;padding-right:8px}
 .luwrap{display:flex;align-items:center;gap:5px}
 .pc{position:relative;display:inline-block;width:40px;text-align:center}
-.ph{display:block;width:38px;height:38px;border-radius:50%;background:#15171b;box-shadow:0 0 0 2px ACC;background-size:cover;background-position:center top;margin:0 auto}
+.ph{display:block;width:38px;height:38px;border-radius:50%;background-color:#15171b;box-shadow:0 0 0 2px ACC;background-size:cover;background-position:center top;margin:0 auto}
 .pn{position:absolute;bottom:-2px;right:2px;background:#0c0c0e;box-shadow:0 0 0 1.5px ACC;color:#fff;font-size:8px;font-weight:800;border-radius:50%;width:15px;height:15px;line-height:15px;text-align:center}
 .pos{color:#2fe08a}.neg{color:#ff5468}
 .ar{font-size:8px}
@@ -188,7 +188,7 @@ TABLE = ('<div class="hd">LNBP · LINEUP EXPLORER · ' + mode.upper() + '</div>'
          '<div class="tn">' + TNAME.get(team, team) + '</div>'
          '<div class="scrollx"><table><thead><tr id="hd"></tr></thead><tbody id="tb"></tbody></table></div>')
 maxh = min(120 + len(data)*54, 620)
-block = (STYLE.replace("MAXHVAL", str(maxh)+"px") + TABLE
+block = (STYLE.replace("MAXHVAL", str(maxh)+"px") + "<style>" + im_css + "</style>" + TABLE
          + SCRIPT.replace("__COLS__", coljson).replace("__DATA__", datajson).replace("__DEF__", defsort))
 components.html(block, height=maxh + 90, scrolling=False)
 st.caption("Totales de los juegos con play-by-play · click en cualquier columna para ordenar · mín 3 min juntos · "
