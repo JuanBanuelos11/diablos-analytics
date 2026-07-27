@@ -39,14 +39,14 @@ st.markdown("<style>#MainMenu,header,footer{visibility:hidden}.stApp{background:
             ".block-container{padding-top:1.1rem;max-width:1180px}</style>", unsafe_allow_html=True)
 
 if df.empty:
-    st.warning("No hay datos. Sube un CSV de juego al repo."); st.stop()
+    st.warning("No data yet. Upload a game CSV to the repo."); st.stop()
 
 c1, c2 = st.columns([1.1, 1.9])
-team = c1.selectbox("Equipo", sorted(df["team_code"].unique(), key=lambda t: 0 if t == "DRM" else 1),
+team = c1.selectbox("Team", sorted(df["team_code"].unique(), key=lambda t: 0 if t == "DRM" else 1),
                     format_func=lambda t: TNAME.get(t, t))
-size = c2.radio("Tamaño", [2, 3, 4, 5], index=3, horizontal=True)
+size = c2.radio("Size", [2, 3, 4, 5], index=3, horizontal=True)
 pl_team = PLAYERS.get(team, {})
-sel = st.multiselect("Filtrar por jugador (los incluye a todos)", list(pl_team.keys()),
+sel = st.multiselect("Filter by player (includes them all)", list(pl_team.keys()),
                      format_func=lambda l: pl_team[l]["sn"])
 acc = COLORS.get(team, "#e01023")
 
@@ -110,7 +110,7 @@ IMCSS
 """.replace("ACC", "%ACC%").replace("IMCSS", im_css).replace("PANELPX", "PANELVAL")
 
 HTMLHEAD = ('<div class="hd">LNBP · LINEUP EXPLORER</div><div class="tn">TEAMNAME</div>'
-            '<div class="hrow"><span class="rk"></span><span class="htitle">ALINEACIÓN</span>'
+            '<div class="hrow"><span class="rk"></span><span class="htitle">LINEUP</span>'
             '<button class="hcol" id="h-min" onclick="setSort(\'min\')">MIN <span class="ar" id="ar-min"></span></button>'
             '<button class="hcol" id="h-pm" onclick="setSort(\'pm\')">+/- <span class="ar" id="ar-pm"></span></button>'
             '<button class="hcol" id="h-pm36" onclick="setSort(\'pm36\')">ADJ36 <span class="ar" id="ar-pm36"></span></button>'
@@ -149,6 +149,6 @@ if rows:
     height = 150 + panel_px
     components.html(block, height=height, scrolling=False)
 else:
-    st.info("Sin alineaciones con esos filtros (mínimo 3 min juntos).")
+    st.info("No lineups match these filters (minimum 3 min together).")
 
-st.caption("Clic en MIN · +/- · ADJ36 para ordenar (mayor↔menor) · ADJ36 = +/- extrapolado a 36 min · mínimo 3 min juntos")
+st.caption("Click MIN · +/- · ADJ36 to sort (high↔low) · ADJ36 = +/- extrapolated to 36 min · minimum 3 min together")
