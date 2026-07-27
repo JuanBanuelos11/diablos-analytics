@@ -192,5 +192,5 @@ maxh = min(120 + len(data)*54, 620)
 block = (STYLE.replace("MAXHVAL", str(maxh)+"px") + "<style>" + im_css + "</style>" + TABLE
          + SCRIPT.replace("__COLS__", coljson).replace("__DATA__", datajson).replace("__DEF__", defsort))
 components.html(block, height=maxh + 90, scrolling=False)
-st.caption("Totales de los juegos con play-by-play · click en cualquier columna para ordenar · mín 3 min juntos · "
-           "ORTG/DRTG = pts por 100 pos · POSS, eFG%, TS%, rebote% y ratios estilo NBA")
+st.caption(f"{view} · counting stats accumulate across games (Per Game divides by GP; percentages & ratings are rate stats) · "
+           "click any column header to sort · min 3 min together · ORTG/DRTG = points per 100 poss")
