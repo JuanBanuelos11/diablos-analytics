@@ -18,16 +18,19 @@ def load():
     df = pd.concat([pd.read_csv(f) for f in files], ignore_index=True) if files else pd.DataFrame()
     players = {}
     for f in glob.glob("**/*", recursive=True):
-        if f.lower().endswith(".json"):
-            try:
-                d = json.load(open(f, encoding="utf-8"))
-                if isinstance(d, dict) and any(k in d for k in ("DRM", "AGS")):
-                    players = d; break
-            except Exception:
-                pass
+        if not os.path.isfile(f) or f.lower().endswith((".csv", ".py", ".toml", ".md", ".txt")):
+            continue
+        try:
+            d = json.load(open(f, encoding="utf-8"))
+            if isinstance(d, dict) and any(k in d for k in ("DRM", "AGS")):
+                players = d; break
+        except Exception:
+            pass
     return df, players
 
 df, PLAYERS = load()
+if not df.empty and "seconds" not in df.columns:
+    df["seconds"] = (df["minutes"] * 60).round().astype(int)  # respaldo juegos viejos
 
 st.markdown("<style>#MainMenu,header,footer{visibility:hidden}.stApp{background:#08090b}"
             ".block-container{padding-top:1.2rem;max-width:1150px}</style>", unsafe_allow_html=True)
@@ -48,9 +51,10 @@ acc = COLORS.get(team, "#e01023")
 
 t = df[(df["team_code"] == team) & (df["size"] == size)]
 agg = (t.groupby("lineup", as_index=False)
-        .agg(GP=("date", "nunique"), MIN=("minutes", "sum"), PM=("plus_minus", "sum")))
+        .agg(GP=("date", "nunique"), SEC=("seconds", "sum"), PM=("plus_minus", "sum")))
+agg["MIN"] = agg["SEC"] / 60
 agg = agg[agg["MIN"] >= min_min]
-agg["PM36"] = (agg["PM"] * 36 / agg["MIN"]).round(0).astype(int)
+agg["PM36"] = (agg["PM"] * 2160 / agg["SEC"]).round(0).astype(int)  # 36*60, exacto desde segundos
 agg["MIN"] = agg["MIN"].round(1)
 for lab in sel:
     agg = agg[agg["lineup"].str.contains(lab, regex=False)]
