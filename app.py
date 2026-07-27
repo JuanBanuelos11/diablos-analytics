@@ -29,8 +29,11 @@ def load():
     return df, players
 
 df, PLAYERS = load()
-if not df.empty and "seconds" not in df.columns:
-    df["seconds"] = (df["minutes"] * 60).round().astype(int)  # respaldo juegos viejos
+if not df.empty:
+    if "seconds" not in df.columns:
+        df["seconds"] = df["minutes"] * 60
+    # rellena filas sin segundos (juegos viejos sin esa columna) desde minutos
+    df["seconds"] = df["seconds"].fillna(df["minutes"] * 60).round().astype(int)
 
 st.markdown("<style>#MainMenu,header,footer{visibility:hidden}.stApp{background:#08090b}"
             ".block-container{padding-top:1.2rem;max-width:1150px}</style>", unsafe_allow_html=True)
