@@ -18,7 +18,16 @@ def load():
             b = os.path.basename(f).lower()
             if b not in seen:
                 seen.add(b); files.append(f)
-    df = pd.concat([pd.read_csv(f) for f in files], ignore_index=True) if files else pd.DataFrame()
+    lu, bx = [], []
+    for f in files:
+        try:
+            d = pd.read_csv(f)
+        except Exception:
+            continue
+        if "lineup" in d.columns:   lu.append(d)
+        elif "player" in d.columns: bx.append(d)      # box score individual por juego
+    df  = pd.concat(lu, ignore_index=True) if lu else pd.DataFrame()
+    box = pd.concat(bx, ignore_index=True) if bx else pd.DataFrame()
     players = {}
     for f in glob.glob("**/*", recursive=True):
         if not os.path.isfile(f) or f.lower().endswith((".csv", ".py", ".toml", ".md", ".txt")):
@@ -29,11 +38,13 @@ def load():
                 players = d; break
         except Exception:
             pass
-    return df, players
+    return df, box, players
 
-df, PLAYERS = load()
+df, BOXDF, PLAYERS = load()
 if not df.empty:
     df = df[df["team_code"] == "DRM"].reset_index(drop=True)
+if not BOXDF.empty:
+    BOXDF = BOXDF[BOXDF["team_code"] == "DRM"].reset_index(drop=True)
 if df.empty:
     st.warning("No data yet. Upload a game CSV to the repo."); st.stop()
 if "seconds" not in df.columns:
@@ -55,6 +66,45 @@ view = c3.radio("View", ["Totals", "Per Game"], index=0, horizontal=True)
 per_game = (view == "Per Game")
 pl_team = PLAYERS.get(team, {})
 acc = COLORS.get(team, "#e01023")
+
+IND = (size == 1 and mode == "Traditional" and not BOXDF.empty)
+
+if IND:
+    # ---- size 1 · box score INDIVIDUAL del jugador (cuadra con la LNBP) ----
+    b = BOXDF.copy()
+    IBOX = ["pts","fgm","fga","tpm","tpa","ftm","fta","orb","drb","reb","ast","tov","stl","blk","pf","ef"]
+    for c in IBOX + ["seconds", "plus_minus"]:
+        if c not in b.columns: b[c] = 0
+    A = b.groupby("label")[["seconds", "plus_minus"] + IBOX].sum().reset_index()
+    A["GP"] = b[b["seconds"] > 0].groupby("label")["date"].nunique().reindex(A["label"]).fillna(0).astype(int).values
+    A = A[A["seconds"] > 0].reset_index(drop=True)   # sin piso de minutos: igual que el box de la liga
+    if A.empty:
+        st.info("No individual box score data yet."); st.stop()
+
+    def pct(a, b_):
+        return round(100.0 * a / b_, 1) if b_ else None
+
+    recs = []
+    for _, r in A.iterrows():
+        mn = r["seconds"] / 60.0
+        recs.append(dict(
+            lineup=r["label"], GP=int(r["GP"]), MIN=round(mn, 1), PM=int(r["plus_minus"]),
+            ADJ36=round(r["plus_minus"] * 36 / mn, 1) if mn else None,
+            PTS=int(r["pts"]), FGM=int(r["fgm"]), FGA=int(r["fga"]), FGp=pct(r["fgm"], r["fga"]),
+            TPM=int(r["tpm"]), TPA=int(r["tpa"]), TPp=pct(r["tpm"], r["tpa"]),
+            FTM=int(r["ftm"]), FTA=int(r["fta"]), FTp=pct(r["ftm"], r["fta"]),
+            OREB=int(r["orb"]), DREB=int(r["drb"]), REB=int(r["reb"]),
+            AST=int(r["ast"]), TOV=int(r["tov"]), STL=int(r["stl"]), BLK=int(r["blk"]),
+            PF=int(r["pf"]), EF=int(r["ef"]),
+            eFG=pct(r["fgm"] + 0.5 * r["tpm"], r["fga"]),
+            TS=pct(r["pts"], 2 * (r["fga"] + 0.44 * r["fta"])),
+        ))
+    COUNT = {"PTS","FGM","FGA","TPM","TPA","FTM","FTA","OREB","DREB","REB","AST","TOV","STL","BLK","PF","EF","PM","MIN"}
+    if per_game:
+        for d in recs:
+            gp = d["GP"] or 1
+            for k in COUNT:
+                if d.get(k) is not None: d[k] = round(d[k] / gp, 1)
 
 t = df[(df["team_code"] == team) & (df["size"] == size)].copy()
 g = t.groupby("lineup")
@@ -107,9 +157,10 @@ def derive(r):
     d["lineup"] = r["lineup"]
     return d
 
-recs = [derive(r) for _, r in A.iterrows()]
+if not IND:
+    recs = [derive(r) for _, r in A.iterrows()]
 COUNT = {"PTS","FGM","FGA","TPM","TPA","FTM","FTA","OREB","DREB","REB","AST","TOV","STL","BLK","PM","POSS","MIN"}
-if per_game:
+if per_game and not IND:
     for d in recs:
         gp = d["GP"] or 1
         for k in COUNT:
@@ -134,8 +185,13 @@ TRAD = [("GP","GP","i"),("MIN","MIN","1"),("PM","+/-","pm"),("ADJ36","ADJ36","1"
 ADV = [("GP","GP","i"),("MIN","MIN","1"),("POSS","POSS","i"),("ORTG","ORTG","1"),("DRTG","DRTG","1"),("NETRTG","NET","pm"),("ADJ36","ADJ36","1"),
        ("eFG","eFG%","p"),("TS","TS%","p"),("ASTp","AST%","p"),("ASTTO","AST/TO","2"),("ASTr","AST RATIO","1"),
        ("TOr","TO RATIO","1"),("OREBp","OREB%","p"),("DREBp","DREB%","p"),("REBp","REB%","p"),("PACE","PACE","1")]
-base_cols = TRAD if mode == "Traditional" else ADV
-CNT = {"PTS","FGM","FGA","TPM","TPA","FTM","FTA","OREB","DREB","REB","AST","TOV","STL","BLK","POSS"}
+IND_COLS = [("GP","GP","i"),("MIN","MIN","1"),("PM","+/-","pm"),("ADJ36","ADJ36","1"),("PTS","PTS","i"),
+        ("FGM","TC","i"),("FGA","TI","i"),("FGp","TI%","p"),("TPM","3PC","i"),("TPA","3PI","i"),("TPp","3P%","p"),
+        ("FTM","TLC","i"),("FTA","TLI","i"),("FTp","TL%","p"),("OREB","RO","i"),("DREB","RD","i"),("REB","REB","i"),
+        ("AST","AST","i"),("TOV","PE","i"),("STL","REC","i"),("BLK","BLQ","i"),("PF","TF","i"),("EF","EF","i"),
+        ("eFG","eFG%","p"),("TS","TS%","p")]
+base_cols = IND_COLS if IND else (TRAD if mode == "Traditional" else ADV)
+CNT = {"PTS","FGM","FGA","TPM","TPA","FTM","FTA","OREB","DREB","REB","AST","TOV","STL","BLK","POSS","PF","EF"}
 def _fmt(k, f):
     if per_game and k in CNT: return "1"
     if per_game and k == "PM": return "s1"
@@ -211,5 +267,13 @@ maxh = min(120 + len(data)*64, 640)
 block = (STYLE.replace("MAXHVAL", str(maxh)+"px") + "<style>" + im_css + "</style>" + TABLE
          + SCRIPT.replace("__COLS__", coljson).replace("__DATA__", datajson).replace("__DEF__", defsort))
 components.html(block, height=maxh + 90, scrolling=False)
-st.caption(f"{view} · counting stats accumulate across games (Per Game divides by GP; percentages & ratings are rate stats) · "
-           "click any column header to sort · min 3 min together · ORTG/DRTG = points per 100 poss")
+if IND:
+    st.caption(f"{view} · box score individual por jugador — cuadra con el box oficial de la LNBP · "
+               "+/- y minutos del play-by-play reconstruido · Per Game divide entre los juegos que cada jugador disputó · "
+               "cambia a Advanced para ver los números del EQUIPO con ese jugador en cancha (on-court)")
+elif size == 1:
+    st.caption(f"{view} · ON-COURT: lo que hizo el EQUIPO con ese jugador en cancha (no son sus estadísticas individuales) · "
+               "ORTG/DRTG = puntos por 100 posesiones · usa Traditional para el box individual")
+else:
+    st.caption(f"{view} · counting stats accumulate across games (Per Game divides by GP; percentages & ratings are rate stats) · "
+               "click any column header to sort · min 3 min together · ORTG/DRTG = points per 100 poss")
